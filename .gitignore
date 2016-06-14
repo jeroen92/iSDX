@@ -13,3 +13,4 @@ tags
 *.out
 *.log
 *.swp
+examples/test-mtsim/policies/*.py
