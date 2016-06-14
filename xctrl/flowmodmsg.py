@@ -23,7 +23,6 @@ class FlowModMsgBuilder(object):
              }
 
         self.flow_mods.append(fm)
-
         return cookie
 
     def delete_flow_mod(self, mod_type, rule_type, cookie, cookie_mask):

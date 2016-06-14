@@ -123,7 +123,7 @@ class RefMon(app_manager.RyuApp):
                 self.log.write(str(start_time) + " " + str(end_time) + " " + str(end_time - start_time) + "\n")
 
     def process_flow_mods(self, msg):
-        self.flow_mod_times.put(time())
+#        self.flow_mod_times.put(time(), block=False)
 
         self.logger.info('refmon: received flowmod request')
 
@@ -150,11 +150,9 @@ class RefMon(app_manager.RyuApp):
                 for flow_mod in msg["flow_mods"]:
                     self.logger.debug('FLOWMOD from ' + str(origin) + ': ' + json.dumps(flow_mod))
 
-
-                # push flow mods to the data plane
                 for flow_mod in msg["flow_mods"]:
-                    if self.config.ofv == "1.0":
-                        fm = OFP10FlowMod(self.config, origin, flow_mod)
-                    elif self.config.ofv == "1.3":
-                        fm = OFP13FlowMod(self.config, origin, flow_mod)
-                    self.controller.process_flow_mod(fm)
+                   if self.config.ofv == "1.0":
+                       fm = OFP10FlowMod(self.config, origin, flow_mod)
+                   elif self.config.ofv == "1.3":
+                       fm = OFP13FlowMod(self.config, origin, flow_mod)
+                   self.controller.process_flow_mod(fm)

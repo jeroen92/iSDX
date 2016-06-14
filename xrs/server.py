@@ -38,12 +38,14 @@ def _sender(conn,queue):
 
 ''' receiver '''
 def _receiver(conn,queue):
-    while True:
-        try:
-            line = conn.recv()
-            queue.put(line)
-        except:
-            pass
+    with open('/home/vagrant/iSDX/xrsclient.output', 'w') as outputfile:
+        while True:
+            try:
+                line = conn.recv()
+                outputfile.write(line + '\n\n')
+                queue.put(line)
+            except:
+                pass
 
 ''' main '''
 if __name__ == '__main__':

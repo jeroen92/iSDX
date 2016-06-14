@@ -9,8 +9,10 @@ Vagrant.configure("2") do |config|
   #config.vm.box = "ubuntu/trusty32"
 
   config.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
-      v.customize ["modifyvm", :id, "--memory", "2048"]
+#      v.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+#      v.customize ["modifyvm", :id, "--memory", "2048"]
+        v.memory = 8192
+        v.cpus = 4
   end
 
   ## Guest Config

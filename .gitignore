@@ -1,6 +1,7 @@
 tags
 *.pyc
 *.json
+!scripts/*.json
 *.bak
 *.DS_Store
 .vagrant

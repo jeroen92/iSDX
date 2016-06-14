@@ -69,6 +69,7 @@ class GSS(object):
     def handle_BGP(self, rule_type):
         ### BGP traffic to route server
         port = self.config.route_server.ports[0]
+	self.logger.debug("JEROENDEBUG-----------" + str(port))
         action = {"fwd": [port.id]}
         match = {"eth_dst": port.mac, "tcp_src": BGP}
         self.fm_builder.add_flow_mod("insert", rule_type, BGP_PRIORITY, match, action)

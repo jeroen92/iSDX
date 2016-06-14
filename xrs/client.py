@@ -27,25 +27,24 @@ def _sender(conn,stdin):
     # Warning: when the parent dies we are seeing continual
     # newlines, so we only access so many before stopping
     counter = 0
-
     while True:
         try:
             line = stdin.readline().strip()
-
+ 
             if line == "":
                 counter += 1
                 if counter > 100:
                     break
                 continue
             counter = 0
-
+ 
             conn.send(line)
-
+ 
             sendLogger.debug(line)
-
+ 
         except:
             pass
-
+ 
 ''' Receiver function '''
 def _receiver(conn,stdout):
 

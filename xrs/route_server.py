@@ -54,12 +54,14 @@ class PctrlClient(object):
             try:
                 rv = self.conn.recv()
             except EOFError as ee:
+                logger.debug("EOFERROR: " + str(ee.msg))
                 break
 
             logger.debug('Trace: Got rv: %s', rv)
             if not (rv and self.process_message(**json.loads(rv))):
                 break
 
+        logger.debug('Trying to close the connection CONNCLOSE')
         self.conn.close()
 
         # remove self
@@ -134,7 +136,8 @@ class PctrlClient(object):
 class PctrlListener(object):
     def __init__(self):
         logger.info("Initializing the BGP PctrlListener")
-        self.listener = Listener(config.ah_socket, authkey=None, backlog=100)
+        self.listener = Listener(config.ah_socket, authkey=None, backlog=128)
+        logger.debug('SOCKSTAT ' + str(self.listener))
         self.run = True
 
 
@@ -143,6 +146,7 @@ class PctrlListener(object):
 
         while self.run:
             conn = self.listener.accept()
+            logger.debug('SOCKSTAT ' + str(self.listener.last_accepted))
 
             pc = PctrlClient(conn, self.listener.last_accepted)
             t = Thread(target=pc.start)
@@ -200,7 +204,8 @@ class BGPListener(object):
             # Received BGP route advertisement from ExaBGP
             try:
                 advertise_ip = route['neighbor']['ip']
-            except KeyError:
+            except KeyError as e:
+		logger.debug("KEY ERROR " + str(e.msg))
                 continue
 
             found = []
@@ -209,21 +214,22 @@ class BGPListener(object):
                     advertise_id = portip2participant[advertise_ip]
                     peers_out = participants[advertise_id].peers_out
                 except KeyError:
+                    logger.debug(str(participants))
                     continue
-
+                logger.debug("PARTICIPANTS_SIZE " + str(len(participants)))
                 for id, peer in participants.iteritems():
+                    logger.debug("ADVDEBUG advertising %s to neighbor" % str(route))
                     # Apply the filtering logic
                     if id in peers_out and advertise_id in peer.peers_in:
                         found.append(peer)
 
             for peer in found:
                 # Now send this route to participant `id`'s controller'
+                logger.debug("SENDROUTETOPEER " + str(route))
                 peer.send(route)
-
 
     def send(self, announcement):
         self.server.sender_queue.put(announcement)
-
 
     def stop(self):
         logger.info("Stopping BGPListener.")
