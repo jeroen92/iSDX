@@ -5,7 +5,7 @@
 #  Arpit Gupta (Princeton)
 
 
-import argparse
+import argparse, resource
 from collections import namedtuple
 import json
 from multiprocessing.connection import Listener, Client
@@ -56,7 +56,7 @@ class PctrlClient(object):
             except EOFError as ee:
                 logger.debug("EOFERROR: " + str(ee.msg))
                 break
-
+            logger.info('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
             logger.debug('Trace: Got rv: %s', rv)
             if not (rv and self.process_message(**json.loads(rv))):
                 break
@@ -125,12 +125,14 @@ class PctrlClient(object):
     def process_bgp_message(self, announcement=None, **data):
         if announcement:
             bgpListener.send(announcement)
+            logger.info("RETURNAUGMENTEDBGPMESSAGE " + str(announcement))
         return True
 
 
     def send(self, route):
-        logger.debug('Sending a route update to participant %d', self.id)
+        logger.info('Sending a route update to participant %d', self.id)
         self.conn.send(json.dumps({'bgp': route}))
+        logger.info("CRITICALSOCKETDEBUG: " + str(self.conn.fileno()))
 
 
 class PctrlListener(object):
@@ -226,9 +228,11 @@ class BGPListener(object):
             for peer in found:
                 # Now send this route to participant `id`'s controller'
                 logger.debug("SENDROUTETOPEER " + str(route))
+                logger.info("PEERISOFTYPE: " + str(peer))
                 peer.send(route)
 
     def send(self, announcement):
+        logger.info("CRITICALQUEUEDEBUG " + str(self.server.sender_queue.qsize()))
         self.server.sender_queue.put(announcement)
 
     def stop(self):
@@ -275,6 +279,7 @@ def main():
     while bp_thread.is_alive():
         try:
             time.sleep(5)
+            logger.info('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
         except KeyboardInterrupt:
             bgpListener.stop()
 

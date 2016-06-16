@@ -227,6 +227,7 @@ class ParticipantController(object):
                 break
 
             data = json.loads(tmp)
+            self.logger.info("CRITICALPCTRLDEBUG received route " + str(tmp))
             self.logger.debug("XRS Event received: %s", data)
 
             self.process_event(data)

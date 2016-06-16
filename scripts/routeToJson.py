@@ -58,7 +58,7 @@ def generateIxpConfig(participants):
     mainSwFabricConnections["route server"] = 2
     mainSwFabricConnections["refmon"] = 3
     configTemplate["RefMon Settings"]["fabric connections"]["main"] = mainSwFabricConnections
-    configTemplate["VNHs"] = "172.0.4.1/22"
+    configTemplate["VNHs"] = "10.0.0.1/8"
     with open('%s/examples/test-mtsim/config/sdx_global.cfg' % args.path, 'w') as configFile:
         configFile.write(json.dumps(configTemplate, indent=4))
         configFile.close()
@@ -182,13 +182,19 @@ def parseRoutes():
     print json.dumps(updates)
     return routeSet
 
-def printRoutes(routeSet):
-    print len(routeSet["updates"])
+def printRoutes(routeSet, participants):
+    efficientRouteSet = list()
+    nextHops = list()
+    for update in routeSet["updates"]:
+        if update["neighborIp"] in nextHops: continue
+        nextHops.append(update["neighborIp"])
+        efficientRouteSet.append(update)
+    print len(efficientRouteSet)
     routeInjection = subprocess.Popen(["/home/vagrant/iSDX/xrs/client.py"], stdin=subprocess.PIPE)
     i = 0
     with open('/home/vagrant/iSDX/ownscript.output', 'w') as outputfile:
-        for update in routeSet["updates"]:
-            time.sleep(1)
+        for update in efficientRouteSet:
+            time.sleep(2)
             #routeInjection.communicate(input=str(json.dumps(getUpdateDict(
             str = json.dumps(getUpdateDict(
                 update["neighborIp"],
@@ -210,6 +216,7 @@ def main():
     r.delete('flowqueue')
     routeSet = parseRoutes()
     participants = generateIxpParticipants(routeSet)
+    print participants["1"]
     generateIxpConfig(participants)
     generateIxpPolicyFile(len(routeSet["ases"]))
     generateParticipantPolicyFile(routeSet, participants)
@@ -218,7 +225,7 @@ def main():
     subprocess.Popen(["nohup", "/usr/bin/screen", "-dmS", "two", "/home/vagrant/iSDX/launch.sh", "test-mtsim", "2"])
     time.sleep(5)
     subprocess.Popen(["nohup", "/home/vagrant/iSDX/launch.sh", "test-mtsim", "3", "%s" % str(args.participants)])
-    time.sleep(30)
-    printRoutes(routeSet)
+    time.sleep(10)
+    printRoutes(routeSet, participants)
 
 if __name__ == "__main__": main()

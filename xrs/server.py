@@ -42,19 +42,22 @@ def _receiver(conn,queue):
         while True:
             try:
                 line = conn.recv()
+                outputfile.write('\nSERVERDEBUG items in queue: ' + str(queue.qsize()))
                 outputfile.write(line + '\n\n')
                 queue.put(line)
             except:
                 pass
 
-''' main '''
+''' main 
 if __name__ == '__main__':
     while True:
         server = server()
         while True:
             try:
-                print server.receiver_queue.get()
-                server.sender_queue.put('announce route %s next-hop %s as-path [ %s ]' % ('200.0.0.0/16','172.0.0.1','100'))
+                #print server.receiver_queue.get()
+                print 'aardappels'
+                #server.sender_queue.put('announce route %s next-hop %s as-path [ %s ]' % ('200.0.0.0/16','172.0.0.1','100'))
             except:
                 print 'thread ended'
                 break
+'''
