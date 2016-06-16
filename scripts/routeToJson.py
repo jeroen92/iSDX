@@ -131,55 +131,55 @@ def parseRoutes():
     updates = list()
     ases = list()
     update = {"neighborIp": None, "neighborAs": None, "prefix": None, "community": None, "med": None}
-    with open( args.routeDbPath ) as prefixFile:
-        for line in prefixFile:
-            # Match on begin of line
-            ip = re.match("(^[^\s]+|^[\s]+via)", line)
-            if ip:
-                if len(ases) >= args.participants:
-                    break
+    for routeDb in ['ipv6_1.txt', 'ipv6_2.txt', 'ipv4_1.txt', 'ipv4_2.txt']:
+        with open( args.routeDbPath + '/' + routeDb) as prefixFile:
+            for line in prefixFile:
+                # Match on begin of line
+                ip = re.match("(^[^\s]+|^[\s]+via)", line)
+                if ip:
+                    if len(ases) >= args.participants:
+                        break
+                    else:
+                        if update["neighborAs"] is not None:
+                            if update["neighborAs"] not in ases and 'duplicateAdvertisement' not in update.keys():
+                                ases.append(update["neighborAs"])
+                            if 'duplicateAdvertisement' not in update.keys(): updates.append(update)
+                    lastPrefix = update["prefix"]
+                    update = {"neighborIp": None, "neighborAs": None, "prefix": None, "community": None, "med": None}
+                    if len(ip.group(0).strip()) < 5:
+                        update["prefix"] = lastPrefix
+                        update["duplicateAdvertisement"] = True
+                    else:
+                        update["prefix"] = ip.group(0)
+                    continue
+                neighborIp = re.search("(?<=next_hop: ).*$", line)
+                if neighborIp:
+                    update["neighborIp"] = neighborIp.group(0)
+                    continue
+                asPath = re.search("(?<=as_path: )(\s\d|\d)+", line)
+                if asPath:
+                    update["asPath"] = map(int, asPath.group(0).split())
+                    update["neighborAs"] = update["asPath"][0]
+                    continue
+                med = re.search("(?<=med: ).*$", line)
+                if med:
+                    update["med"] = med.group(0)
                 else:
-                    if update["neighborAs"] is not None:
-                        if update["neighborAs"] not in ases and 'duplicateAdvertisement' not in update.keys():
-                            ases.append(update["neighborAs"])
-                        if 'duplicateAdvertisement' not in update.keys(): updates.append(update)
-                lastPrefix = update["prefix"]
-                update = {"neighborIp": None, "neighborAs": None, "prefix": None, "community": None, "med": None}
-                if len(ip.group(0).strip()) < 5:
-                    update["prefix"] = lastPrefix
-                    update["duplicateAdvertisement"] = True
+                    update["med"] = 0
+                continue
+                community = re.search("(?<=\.community: ).*$", line)
+                if community:
+                    temp = str(community.group(0)).replace(')','').replace('(','')
+                    temp = map(str, temp.split())
+                    update["community"] = [map(int, i.split(',')) for i in temp]
                 else:
-                    update["prefix"] = ip.group(0)
+                    community = '()'
                 continue
-            neighborIp = re.search("(?<=next_hop: ).*$", line)
-            if neighborIp:
-                update["neighborIp"] = neighborIp.group(0)
-                continue
-            asPath = re.search("(?<=as_path: )(\s\d|\d)+", line)
-            if asPath:
-                update["asPath"] = map(int, asPath.group(0).split())
-                update["neighborAs"] = update["asPath"][0]
-                continue
-            med = re.search("(?<=med: ).*$", line)
-            if med:
-                update["med"] = med.group(0)
-            else:
-                update["med"] = 0
-            continue
-            community = re.search("(?<=\.community: ).*$", line)
-            if community:
-                temp = str(community.group(0)).replace(')','').replace('(','')
-                temp = map(str, temp.split())
-                update["community"] = [map(int, i.split(',')) for i in temp]
-            else:
-                community = '()'
-            continue
     if update not in updates:
         updates.append(update)
     if update["neighborAs"] not in ases:
         ases.append(update["neighborAs"])
     routeSet = {"ases": ases, "updates": updates}
-    print json.dumps(updates)
     return routeSet
 
 def printRoutes(routeSet, participants):
@@ -216,7 +216,6 @@ def main():
     r.delete('flowqueue')
     routeSet = parseRoutes()
     participants = generateIxpParticipants(routeSet)
-    print participants["1"]
     generateIxpConfig(participants)
     generateIxpPolicyFile(len(routeSet["ases"]))
     generateParticipantPolicyFile(routeSet, participants)
